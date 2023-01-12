@@ -99,7 +99,7 @@ body {
   cursor: pointer;
 }
 
-.tweet-settings .textarea {
+.tweet-settings #textarea {
   width: 100%;
   background: transparent;
   border-bottom: 1px solid #2f3336;
@@ -110,11 +110,11 @@ body {
   resize: none;
 }
 
-.tweet-settings .textarea::placeholder {
+.tweet-settings #textarea::placeholder {
   color: #fff;
 }
 
-.tweet-settings .textarea:focus {
+.tweet-settings #textarea:focus {
   border-color: #4e555a;
 }
 

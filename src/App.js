@@ -1,22 +1,113 @@
-import React,{useState} from 'react'
-import { ReplyIcon,LikeIcon,ShareIcon,RetweetIcon,VerifiedIcon } from './icons';
-import './assets/main.css'
+import React, { useState, useEffect, createRef } from "react";
+import { Profile } from "./Profile";
+import { useScreenshot, createFileName } from "use-react-screenshot";
+import { language } from "./Language";
+import {
+  ReplyIcon,
+  LikeIcon,
+  ShareIcon,
+  RetweetIcon,
+  VerifiedIcon,
+} from "./icons";
+import "./assets/main.css";
 function App() {
-
   const [name, setName] = useState();
   const [username, setUsername] = useState();
   const [isVerified, setIsVerified] = useState(0);
+  const [avatar, setAvatar] = useState();
   const [tweet, setTweet] = useState();
   const [retweets, setRetweets] = useState(0);
   const [quoteTweets, setQuoteTweets] = useState(0);
   const [likes, setLikes] = useState(0);
+  const tweetRef = createRef(null);
+  const downloadRef = createRef();
+  const [lang, setLang] = useState("aze");
+  const [image, takeScreenShot] = useScreenshot({
+    type: "image/jpeg",
+    quality: 1.0
+  });
+  const [langText, setLangText] = useState();
+  const download = (image, { name = "img", extension = "jpg" } = {}) => {
+    const a = document.createElement("a");
+    a.href = image;
+    a.download = createFileName(extension, name);
+    a.click();
+  };
+  const getImage = () =>takeScreenShot(tweetRef.current).then(download);
+  ;
+
+
+  const formatNumber = (num) => {
+    if (num < 1000) {
+      return num;
+    }
+    num /= 1000;
+    num = String(num).split(".");
+    return num[0] + (num[1] > 100 ? "," + num[1].slice(0, 1) + "B" : "B");
+  };
+  const avatarHandle = (e) => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.addEventListener("load", function () {
+      setAvatar(this.result);
+    });
+    reader.readAsDataURL(file);
+  };
+  function convertImgToBase64(url, callback, outputFormat) {
+    var canvas = document.createElement("CANVAS");
+    var ctx = canvas.getContext("2d");
+    var img = new Image();
+    img.crossOrigin = "Anonymous";
+    img.onload = function () {
+      canvas.height = img.height;
+      canvas.width = img.width;
+      ctx.drawImage(img, 0, 0);
+      var dataURL = canvas.toDataURL(outputFormat || "image/png");
+      callback.call(this, dataURL);
+      // Clean up
+      canvas = null;
+    };
+    img.src = url;
+  }
+
+  const fetchTwitterInfo = () => {
+    fetch(
+      `https://typeahead-js-twitter-api-proxy.herokuapp.com/demo/search?q=${username}`
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        const twitter = data[0];
+
+        convertImgToBase64(
+          twitter.profile_image_url_https,
+          function (base64Image) {
+            setAvatar(base64Image);
+          }
+        );
+
+        setName(twitter.name);
+        setUsername(twitter.screen_name);
+        setTweet(twitter.status.text);
+        setRetweets(twitter.status.retweet_count);
+        setLikes(twitter.status.favorite_count);
+      });
+  };
+  useEffect(() => {
+    setLangText(language[lang]);
+  }, [lang]);
+
+  useEffect(() => {
+    if (image) {
+      downloadRef.current.click();
+    }
+  }, [image]);
   return (
     <>
       <div className="tweet-settings">
-        <h3>Tweet ayarları</h3>
+        <h3>{langText?.settings}</h3>
         <ul>
           <li>
-            <label>Ad Soyad</label>
+            <label>{langText?.name}</label>
             <input
               type="text"
               className="input"
@@ -25,7 +116,7 @@ function App() {
             />
           </li>
           <li>
-            <label>İstifadəçi adı</label>
+            <label>{langText?.username}</label>
             <input
               type="text"
               className="input"
@@ -34,20 +125,20 @@ function App() {
             />
           </li>
           <li>
-            <label>Tweet</label>
+            <label>{langText?.tweet}</label>
             <textarea
-              class="textarea"
+              id="textarea"
               maxLength="290"
               value={tweet}
               onChange={(e) => setTweet(e.target.value)}
             />
           </li>
           <li>
-            <label>Profil şəkli</label>
-            <input type="file" className="input" />
+            <label>{langText?.avatar}</label>
+            <input type="file" className="input" onChange={avatarHandle} />
           </li>
           <li>
-            <label>Retweet</label>
+            <label>{langText?.retweet}</label>
             <input
               type="number"
               className="input"
@@ -56,7 +147,7 @@ function App() {
             />
           </li>
           <li>
-            <label>Alıntı Tweetler</label>
+            <label>{langText?.quotetweet}</label>
             <input
               type="number"
               className="input"
@@ -65,7 +156,7 @@ function App() {
             />
           </li>
           <li>
-            <label>Bəyəni</label>
+            <label>{langText?.likes}</label>
             <input
               type="number"
               className="input"
@@ -74,27 +165,37 @@ function App() {
             />
           </li>
           <li>
-            <label>Doğrulanmış Hesab</label>
+            <label>{langText?.verified}</label>
             <select
               onChange={(e) => setIsVerified(e.target.value)}
               defaultValue={isVerified}
             >
-              <option value="1">Bəli</option>
-              <option value="0">Xeyr</option>
+              <option value="1">{langText?.yes}</option>
+              <option value="0">{langText?.no}</option>
             </select>
           </li>
-          <button>Yarat</button>
+          <button onClick={getImage}>{langText?.create}</button>
           <div className="download-url">
-                Tweeti yüklə
+            {image && (
+              <a ref={downloadRef} href={image} download="tweet.png">
+                {langText?.down}
+              </a>
+            )}
           </div>
         </ul>
       </div>
       <div className="tweet-container">
         <div className="app-language">
-          <span>
+          <span
+            onClick={() => setLang("aze")}
+            className={lang === "aze" && "active"}
+          >
             Aze
           </span>
-          <span >
+          <span
+            onClick={() => setLang("eng")}
+            className={lang === "eng" && "active"}
+          >
             Eng
           </span>
         </div>
@@ -102,33 +203,39 @@ function App() {
           <input
             type="text"
             value={username}
-            placeholder="Twitter istifadəçi adını yazın"
+            placeholder={langText?.ftch}
             onChange={(e) => setUsername(e.target.value)}
           />
-          <button>Məlamatları al</button>
+          <button onClick={fetchTwitterInfo}>{langText?.receive}</button>
         </div>
 
         <div className="tweet">
           <div className="tweet-author">
+            {(avatar && <img src={avatar} />) || <Profile />}
             <div>
               <div className="name">
-                <span>{name || "Ad Soyad"}</span>
+                <span>{name || langText?.namesur}</span>
+                {isVerified == 1 && <VerifiedIcon width="19" height="19" />}
               </div>
-              <div className="username">@{username || "istifadəçi adı"}</div>
+              <div className="username">@{username || langText?.user}</div>
             </div>
           </div>
           <div className="tweet-content">
-            <p>{tweet || "Bura yazmaq istədiyiniz tweeti yazın"}</p>
+            <p
+              dangerouslySetInnerHTML={{
+                __html: tweet || langText?.writingtweet,
+              }}
+            />
           </div>
           <div className="tweet-stats">
             <span>
-              <b>1</b> Retweet
+              <b>{formatNumber(retweets)}</b> Retweet
             </span>
             <span>
-              <b></b> Quote Tweetler
+              <b>{formatNumber(quoteTweets)}</b> Quote Tweetler
             </span>
             <span>
-              <b></b> Bəyəni
+              <b>{formatNumber(likes)}</b> {langText?.likes}
             </span>
           </div>
           <div className="tweet-actions">
