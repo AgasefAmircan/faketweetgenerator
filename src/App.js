@@ -1,6 +1,6 @@
 import React, { useState, useEffect, createRef } from "react";
 import { Profile } from "./Profile";
-import { useScreenshot, createFileName } from "use-react-screenshot";
+import { useScreenshot } from "use-react-screenshot";
 import { language } from "./Language";
 import {
   ReplyIcon,
@@ -19,24 +19,12 @@ function App() {
   const [retweets, setRetweets] = useState(0);
   const [quoteTweets, setQuoteTweets] = useState(0);
   const [likes, setLikes] = useState(0);
-  const tweetRef = createRef(null);
   const downloadRef = createRef();
   const [lang, setLang] = useState("aze");
-  const [image, takeScreenShot] = useScreenshot({
-    type: "image/jpeg",
-    quality: 1.0
-  });
+  const [image, takeScreenshot] = useScreenshot();
   const [langText, setLangText] = useState();
-  const download = (image, { name = "img", extension = "jpg" } = {}) => {
-    const a = document.createElement("a");
-    a.href = image;
-    a.download = createFileName(extension, name);
-    a.click();
-  };
-  const getImage = () =>takeScreenShot(tweetRef.current).then(download);
-  ;
-
-
+  const ref = createRef(null);
+  const getImage = () => takeScreenshot(ref.current);
   const formatNumber = (num) => {
     if (num < 1000) {
       return num;
@@ -209,7 +197,7 @@ function App() {
           <button onClick={fetchTwitterInfo}>{langText?.receive}</button>
         </div>
 
-        <div className="tweet">
+        <div className="tweet" ref={ref}>
           <div className="tweet-author">
             {(avatar && <img src={avatar} />) || <Profile />}
             <div>
